@@ -1,0 +1,81 @@
+##############################
+# Replcation of Hansen (JME, 1985) "Indivisible labor and the business cycle"
+# - indivisible labor case
+#
+# Philip Schuster, April 2025
+##############################
+
+#------------------------------------------------------------------------------
+
+dims:
+
+tt = 1:500;
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  Cons: U_C[tt]/U_C[tt+1] = (betta*(Y_K[tt+1] + 1 - delta));
+
+  K|predet: K[tt+1] = Y[tt] - Cons[tt] + (1-delta)*K[tt];
+
+  L: -U_L[tt]/U_C[tt] = Y_L[tt];
+
+  # static equations
+  GDP: GDP[tt] = Y[tt];
+  Inv: Inv[tt] = Y[tt] - Cons[tt];
+  Prod: Prod[tt] = Y[tt]/L[tt];
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  Y   = function(TFP,K,L) TFP * K^alpha * L^(1-alpha);
+  Y_L = partial(Y,L);
+  Y_K = partial(Y,K);
+
+  U   = function(Cons,L) log(Cons) + L/hfixed*A*log(1-hfixed);
+  U_C = partial(U,Cons);
+  U_L = partial(U,L);
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  U@x[@s] = U@x(Cons[@s],L[@s])                 {@s = tt, tt+1 | @x = , _C, _L};
+  Y@x[@s] = Y@x(TFP[@s],K[@s],L[@s])            {@s = tt, tt+1 | @x = , _K, _L};
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  betta      = 0.99;
+  alpha      = 0.36;
+  A          = 2;
+  delta      = 0.025;
+  TFP0       = 1;
+
+  hfixed: L0 = 0.3008658;
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  calib()
+
+  myvars = var_stoch(var = "TFP", rho = 0.95, sd = 0.00712, uselog = TRUE, periods = 115)
+
+  set.seed(12345)
+
+  print(results <- stochsim(myvars, runs = 2, nworkers = 2, use_logs = T, use_hpfilter = T))
+  #print(results <- stochsim(myvars, runs = 100, nworkers = 50, use_logs = T, use_hpfilter = T)) # increase runs to 100 to replicate paper
+
+#######################
+
+
+
+
+
+
+
+

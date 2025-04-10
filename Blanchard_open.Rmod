@@ -1,0 +1,114 @@
+##############################
+# The Blanchard-Yaari Model
+# - small open economy
+# - capital adjustment costs
+# - exogenous labor supply
+# - no government
+#
+# Philip Schuster, April 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+dims:
+
+  tt = 1:500;
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  # demography
+  N|predet:      N[tt+1] = gam[tt]*N[tt] + NB[tt];
+  L:             L[tt] = ell*theta[tt]*N[tt];
+
+  # household sector
+  Omega:         Omega[tt] = 1 + betta^sigC*(1+r[tt])^(sigC-1)*gam[tt]*Omega[tt+1];
+  H:             H[tt] = w[tt]*L[tt] + gam[tt]*H[tt+1]*N[tt]/N[tt+1]/(1+r[tt]);
+  Cons:          Cons[tt] = (A[tt] + H[tt])/Omega[tt];
+
+  # firm sector
+  K|predet:      K[tt+1] = (1-delta)*K[tt] + Inv[tt];
+  Inv:           qTob[tt+1] = (1+r[tt])*(1+J_I[tt]);
+  qTob:          qTob[tt] = pK[tt] - J_K[tt] + qTob[tt+1]/(1+r[tt])*(1-delta);
+  pK:            pK[tt] = Y_K[tt];
+  w:             w[tt]  = Y_L[tt];
+  Div:           Div[tt] = Y[tt] - w[tt]*L[tt] - Inv[tt] - J[tt];
+  V:             V[tt] = Div[tt] + V[tt+1]/(1+r[tt]);
+
+  # market clearing
+  TB:            Y[tt] = Inv[tt] + J[tt] + Cons[tt] + TB[tt];
+  A:             A[tt] = DF[tt] + V[tt];
+  DF|predet:     DF[tt+1] = (1+r[tt])*(DF[tt] + TB[tt]);
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  # production function
+  Y   = function(K,L) TFP*K^alphaK*L^(1-alphaK);
+  Y_L = partial(Y,L);
+  Y_K = partial(Y,K);
+
+  # capital adjustment cost function
+  J   = function(K,Inv) Psi/2*K*(Inv/K-delta)^2;
+  J_K = partial(J,K);
+  J_I = partial(J,Inv);
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  Y@x@s = Y@x(K@s,L@s)                {@s = 0, [tt], [tt+1] | @x = , _K, _L};
+  J@x@s = J@x(K@s,Inv@s)              {@s = 0, [tt], [tt+1] | @x = , _K, _I};
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  r0     = 0.04;
+
+  betta: DF0 = 0;
+
+  avage  := 40;
+  gam0   = avage/(avage+1);
+
+  sigC   = 0.5;
+
+  Psi    = 10;
+  alphaK: L0 = 35;
+
+  delta  = 0.1;
+
+  theta0 = 1.0;
+  ell:   w0 = 2.0;
+
+  NB0:   N0 = 100.0;
+  TFP:   Y0 = 100.0;
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  # some shock
+  #K[1]  = K0*0.95
+  NB[]   = NB0*1.02
+
+  # transition path
+  dynsolve()
+
+  plot(0:tend, c(K0,K))
+  plot(0:tend, c(DF0,DF))
+
+##############################
+
+
+
+
+
+
+
+

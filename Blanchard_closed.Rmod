@@ -1,0 +1,98 @@
+##############################
+# The Blanchard-Yaari Model
+# - closed economy
+# - log-utility function
+# - exogenous labor supply
+# - no government
+#
+# Philip Schuster, April 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+dims:
+
+  tt = 1:500;
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  # demography
+  N|predet:      N[tt+1] = gam[tt]*N[tt] + NB[tt];
+  L:             L[tt] = ell[tt]*N[tt];
+
+  MPC := 1 - betta*gam[tt];
+
+  # household sector
+  H:             H[tt] = w[tt]*L[tt] + gam[tt]*H[tt+1]*N[tt]/N[tt+1]/(1+r[tt]);
+  Cons:          Cons[tt] = MPC*(V[tt] + H[tt]);
+
+  # firm sector
+  K|predet:      K[tt+1] = (1-delta)*K[tt]+Inv[tt];
+  r:             Y[tt] = Inv[tt] + Cons[tt];
+  Inv:           qTob[tt+1] = (1+r[tt]);
+  qTob:          qTob[tt] = pK[tt] + qTob[tt+1]/(1+r[tt])*(1-delta);
+  V:             V[tt] = qTob[tt]*K[tt];
+
+  pK:            pK[tt] = Y_K[tt];
+  w:             w[tt]  = Y_L[tt];
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  Y   = function(K,L) TFP*K^alphaK*L^(1-alphaK);
+  Y_L = partial(Y,L);
+  Y_K = partial(Y,K);
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  Y@x@s = Y@x(K@s,L@s)                {@s = 0, [tt], [tt+1] | @x = , _K, _L};
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  betta  = 0.99;
+  gam0   = 0.97;
+  alphaK = 0.3;
+  delta  = 0.2*Y(K0,L0)/K0;
+
+  ell0   = 0.8;
+  NB0:   N0 = 100.0;
+  TFP:   Y0 = 100.0;
+
+#-------------------------------------------------------------------------------
+
+startguess:
+
+  K0    = 4*100.0;
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  # some shock
+  K[1]  = K0*0.95
+  #NB[]   = NB0*1.02
+
+  # transition path
+  dynsolve()
+
+  plot(0:tend, c(K0,K))
+
+##############################
+
+
+
+
+
+
+
+

@@ -1,0 +1,89 @@
+##############################
+# An RBC model
+# - replication of rbc.ipynp from sequence-jacobian
+#   https://github.com/shade-econ/sequence-jacobian (Auclert et al. 2021)
+#
+# Philip Schuster, April 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  # firm
+  r: r[tt] + delta = alpha * Z[tt] * (K[tt-1] / L[tt])^(alpha - 1);
+  w: w[tt] = (1 - alpha) * Z[tt] * (K[tt-1] / L[tt])^alpha;
+  Y: Y[tt] = Z[tt] * K[tt-1]^alpha * L[tt]^(1 - alpha);
+
+  # household
+  L: Cons[tt] = (w[tt] / vphi / L[tt])^(1/frisch)^eis;
+  K: K[tt] = (1-delta)*K[tt-1] + Inv[tt];
+
+  # mkt_clearing
+  Inv: Y[tt] = Cons[tt] + Inv[tt];
+  Cons: Cons[tt]^(-1/eis) = betta * (1+r[tt+1])*Cons[tt+1]^(-1/eis);
+  walras: walras[tt] = Cons[tt] + K[tt] - (1+r[tt]) * K[tt-1] - w[tt]*L[tt];
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  delta  = 0.025;
+  frisch = 1.0;
+  alpha  = 0.11;
+  eis    = 1.0;
+
+  vphi:  L0 = 1.0;
+  Z0:    Y0 = 1.0;
+  betta: r0 = 0.01;
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib(verbose = "full")
+
+  # specify shocks
+  Z1 = Z + 0.01*Z0*0.8^(0:(tend-1))
+  Z2 = c(rep(Z0, 10), Z1[1:(tend-10)])
+
+  plot(1:tend, 100*(Z1 - Z0)/Z0, xlim = c(1, 50), type = "l", col = "blue", ylab = "% deviation from ss", xlab = "quarters", main = "Two TFP shocks")
+  lines(1:tend, 100*(Z2 - Z0)/Z0, col = "orange")
+  legend("topright", legend = c("regular shock", "news shock"), col = c("blue", "orange"), lty = 1)
+
+  # Shock 1:
+  # set shock 1
+  Z[] = Z1
+
+  # transition path
+  dynsolve()
+
+  # save result
+  Cons1 = Cons
+
+  # Shock 2:
+  calib() # reset model
+
+  # set shock 2
+  Z[] = Z2
+
+  # transition path
+  dynsolve()
+
+  # save result
+  Cons2 = Cons
+
+  plot(1:tend, 100*(Cons1 - Cons0)/Cons0, xlim = c(1, 50), type = "l", col = "blue", ylab =  "% deviation from ss", xlab = "quarters", main = "Consumption response to TFP shocks")
+  lines(1:tend, 100*(Cons2 - Cons0)/Cons0, col = "orange")
+  legend("topright", legend = c("regular shock", "news shock"), col = c("blue", "orange"), lty = 1)
+
+##############################
+
+
+
+
+
+
+
+
