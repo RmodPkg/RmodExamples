@@ -1,0 +1,273 @@
+##############################
+# Firm problem for production function with energy
+# - for given labor supply, tax rates, and prices for final good and investment
+#
+# nested production function:
+# Y -> K, L
+#      K -> EK, KR    (energy-capital-bundle vs. general capital "R" = regular or rest)
+#           EK -> EKC, EKD     (clean vs. dirty)
+#                 EKC -> EC, KC (raw energy vs. energy spec. capital)
+#                 EKD -> EKD1, EKD2, EKD3 (1: oil, 2: gas, 3: coal)
+#                        EDK1 -> ED1, KD1 (raw energy vs. energy spec. capital)
+#                        EDK2 -> ED2, KD2 (raw energy vs. energy spec. capital)
+#                        EDK3 -> ED3, KD3 (raw energy vs. energy spec. capital)
+#
+# Philip Schuster, April 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  GN[tt] := (1 + gn[tt]);
+
+  @FOR(@s = C, D1, D2, D3, R) # clean, dirty1 (oil), dirty2 (gas), dirty3 (coal), general
+
+    # capital accumulation
+    K@s|predet:      GN[tt]*K@s[tt+1] = (1-delta[tt])*K@s[tt] + Inv@s[tt];
+    Inv@s:           qTob@s[tt+1] = (1+r[tt])*pI[tt]*(1 - subI@s[tt] + J@s_I[tt]);
+    qTob@s:          qTob@s[tt] = (1-tauprof[tt])*pK@s[tt] - pI[tt]*J@s_K[tt] + pI[tt]*delta[tt]*tauprof[tt] + qTob@s[tt+1]/(1+r[tt])*(1-delta[tt]);
+
+  @ENDFOR
+
+  # factor demands
+  ## 1st level
+  pK:            (1+tauK[tt])*pK[tt]  = (1-tauY[tt])*ph[tt]*Y_K[tt];
+
+  ## 2nd level
+  pEK:           pEK[tt] = pK[tt]*K_EK[tt];
+  pKR:           pKR[tt] = pK[tt]*K_KR[tt];
+
+  ## 3rd level
+  pEKC:       pEKC[tt] = pEK[tt]*EK_EKC[tt];
+  pEKD:       pEKD[tt] = pEK[tt]*EK_EKD[tt];
+
+  pEKD1:      pEKD1[tt] = pEKD[tt]*EKD_EKD1[tt];
+  pEKD2:      pEKD2[tt] = pEKD[tt]*EKD_EKD2[tt];
+  pEKD3:      pEKD3[tt] = pEKD[tt]*EKD_EKD3[tt];
+
+  @FOR(@s = C, D1, D2, D3)
+
+    ## 4th level
+    pK@s:     (1+tauK@s[tt])*pK@s[tt] = pEK@s[tt]*EK@s_K@s[tt];
+
+    E@s:       pE@s[tt] = pEK@s[tt]*EK@s_E@s[tt];
+
+  @ENDFOR
+
+  pEC:   pEC[tt]  = pECtilde[tt]  + tauEC[tt];
+  pED1:  pED1[tt] = pED1tilde[tt] + tauED1[tt];
+  pED2:  pED2[tt] = pED2tilde[tt] + tauED2[tt];
+  pED3:  pED3[tt] = pED3tilde[tt] + tauED3[tt];
+
+  # accounting
+  Energy: Energy[tt] = EC[tt] + ED1[tt] + ED2[tt] + ED3[tt];
+  EnergyCapitalIntensity: EnergyCapitalIntensity[tt] = Energy[tt]/K[tt] * EK_scale;
+
+  EnergyshareED1: EnergyshareED1[tt] = ED1[tt]/Energy[tt];
+  EnergyshareED2: EnergyshareED2[tt] = ED2[tt]/Energy[tt];
+  EnergyshareED3: EnergyshareED3[tt] = ED3[tt]/Energy[tt];
+  EnergyshareEC:  EnergyshareEC[tt]  = EC[tt]/Energy[tt];
+
+  GDP: GDP[tt] = Y[tt];
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  @CESf(Y, K, L, scale = TFP, sharename = alpha);
+  @CESf(K, EK, KR, timeshares = T);
+  @CESf(EK, EKC, EKD, timeshares = T);
+  @CESf(EKC, EC, KC);
+  @CESf(EKD, EKD1, EKD2, EKD3, timeshares = T);
+
+  @FOR(@s = 1, 2, 3)
+
+    @CESf(EKD@s, ED@s, KD@s);
+
+  @ENDFOR
+
+  @FOR(@s = C, D1, D2, D3, R)
+
+    # capital adjustment cost function
+    J@s   = function(K@s,Inv@s,delta,gnJ) Psi/2*K@s*(Inv@s/K@s-delta-gnJ)^2;
+    J@s_K = partial(J@s,K@s);
+    J@s_I = partial(J@s,Inv@s);
+
+  @ENDFOR
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  J@y@x@s = J@y@x(K@y@s,Inv@y@s,delta@s,gnJ@s)   {@s = 0, [tt], [tt+1] | @x = , _K, _I | @y = C, D1, D2, D3, R};
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  pL_target        := 2.0;
+
+  pECtilde_target  := 0.100; # interpret as price per kWh
+  pED1tilde_target := 0.050; # oil interpret as price per kWh
+  pED2tilde_target := 0.035; # gas interpret as price per kWh
+  pED3tilde_target := 0.015; # coal interpret as price per kWh
+
+  pEC_target  := pECtilde_target + tauEC0;
+  pED1_target := pED1tilde_target + tauED10;
+  pED2_target := pED2tilde_target + tauED20;
+  pED3_target := pED3tilde_target + tauED30;
+  VA_target   := 90.0;
+
+  @CESf_calib(Y, K, L, sharename = alpha);
+  @CESf_calib(K, EK, KR, timeshares = T, aggtarget = T);
+  @CESf_calib(EK, EKC, EKD, timeshares = T, aggtarget = T);
+  @CESf_calib(EKD, EKD1, EKD2, EKD3, timeshares = T, aggtarget = T);
+
+  shareE_vs_K   := 0.5;
+  shareEC_vs_ED := 0.473;
+  shareEK_vs_KR := 0.089/shareE_vs_K/incshareK;
+
+  shareEKD1_in_EKD := 0.809; # oil
+  shareEKD2_in_EKD := 0.157; # gas
+  shareEKD3_in_EKD := 1 - shareEKD1_in_EKD - shareEKD2_in_EKD; # coal
+
+  incshareL   := 0.65;
+  incshareK   := 1 - incshareL;
+
+  incshareEK  := incshareK*shareEK_vs_KR;
+  incshareKR  := incshareK - incshareEK;
+
+  incshareEKC := incshareEK*shareEC_vs_ED;
+  incshareEKD := incshareEK - incshareEKC;
+
+  incshareEKD1 := incshareEKD*shareEKD1_in_EKD;
+  incshareEKD2 := incshareEKD*shareEKD2_in_EKD;
+  incshareEKD3 := incshareEKD*shareEKD3_in_EKD;
+
+  L_target   := VA_target*incshareL/pL_target;
+  K_target   := VA_target*incshareK/pK0;
+  KR_target  := VA_target*incshareKR/pKR0;
+  EK_target  := VA_target*incshareEK/pEK0;
+
+  @FOR(@s = C, D1, D2, D3)
+
+    incshareE@s  := incshareEK@s*shareE_vs_K;
+    incshareK@s  := incshareEK@s - incshareE@s;
+
+    E@s_target  := VA_target*incshareE@s/pE@s_target;
+    K@s_target  := VA_target*incshareK@s/pK@s0;
+
+    @CESf_calib(EK@s, E@s, K@s, aggtarget = T);
+
+  @ENDFOR
+
+  r0     = 0.03;
+  gn0    = 0.007;
+  gnJ0   = gn0;
+  ph0    = 1.01;
+  pI0    = ph0;
+
+  sigY|const   = 0.75;
+  sigK|const   = 0.5;
+  sigEK|const  = 4.0;
+
+  pECtilde0   = pECtilde_target;
+  pED1tilde0  = pED1tilde_target;
+  pED2tilde0  = pED2tilde_target;
+  pED3tilde0  = pED3tilde_target;
+
+  sigEKC |const = 0.4;
+  sigEKD |const = 0.5;
+  sigEKD1|const = 0.4;
+  sigEKD2|const = 0.4;
+  sigEKD3|const = 0.4;
+
+  Psi     = 1.5;
+  delta0  = 0.053;
+
+  L0 = L_target;
+
+  TFP0:   Y0 = VA_target;
+
+  EK_scale: EnergyCapitalIntensity0 = 1.0; # normalize to 1.0
+
+  # government
+  tauY0      = 0.0;
+  tauprof0   = 0.159;
+  tauK0      = 0.0285;
+  tauKC0     = 0.0285;
+  tauKD10    = 0.0285;
+  tauKD20    = 0.0285;
+  tauKD30    = 0.0285;
+
+  subIR0     = 0.0001;
+  subIC0     = 0.0001;
+  subID10    = 0.0001;
+  subID20    = 0.0001;
+  subID30    = 0.0001;
+
+  tauEC0     = 0.11*pECtilde_target;
+  tauED10    = 1.56*pED1tilde_target;   # oil
+  tauED20    = 0.23*pED2tilde_target;   # gas
+  tauED30    = 0.97*pED3tilde_target;   # coal
+
+#-------------------------------------------------------------------------------
+
+startguess:
+
+  pEK0   = 0.1;
+  pEKC0  = 0.1;
+  pEKD0  = 0.1;
+  pED10  = 0.1;
+  pED20  = 0.1;
+  pED30  = 0.1;
+  pEKD10 = 0.1;
+  pEKD20 = 0.1;
+  pEKD30 = 0.1;
+  shareEKD3 = 0.1;
+
+  KC0    = 30;
+  EC0    = 30;
+  pKC0   = r0 + delta0;
+  pInvC0 = 1.0;
+  qTobC0 = 1.0;
+
+  KD10    = 15;
+  ED10    = 30;
+  pKD10   = r0 + delta0;
+  pInvD10 = 1.0;
+  qTobD10 = 1.0;
+
+  KD20    = 10;
+  ED20    = 20;
+  pKD20   = r0 + delta0;
+  pInvD20 = 1.0;
+  qTobD20 = 1.0;
+
+  KD30    = 1;
+  ED30    = 10;
+  pKD30   = r0 + delta0;
+  pInvD30 = 1.0;
+  qTobD30 = 1.0;
+
+  KR0    = 200;
+  pKR0   = r0 + delta0;
+  pInvR0 = 1.0;
+  qTobR0 = 1.0;
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  # some shock
+  tauED1[] = tauED1 + 0.2*pED1tilde0 # tax increase on oil
+
+  # transition path
+  dynsolve()
+
+  plot(0:tend, c(ED10,ED1)) # energy consumption oil
+  plot(0:tend, c(EC0,EC))   # energy consumption renewables

@@ -1,0 +1,85 @@
+##############################
+# A simple Diamond-Mortensen-Pissarides model
+# - linear utility
+# - Nash-bargaining
+# - exogenous separation
+#
+# Philip Schuster, April 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  u: u[tt] = (L-N[tt])/L;
+
+  N|predet: N[tt+1] = qW[tt]*(L-N[tt]) + (1-pix[tt])*N[tt];
+
+  # Omega = W - U
+  Omega: Omega[tt]*(1+r[tt]) = w[tt] - z[tt] - tau[tt] +
+                (1 - pix[tt] - qW[tt])*Omega[tt+1];
+
+  J: J[tt]*(1+r[tt]) = Y_N[tt] - w[tt] + J[tt+1]*(1-pix[tt]);
+
+  theta: J[tt+1] = vacc[tt]/qF[tt];
+
+  w: Omega[tt] = omega/(1-omega)*J[tt];
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  qW  = function(theta) m * theta^(1-eta);
+  qF  = function(theta) m * theta^-eta;
+  Y   = function(TFP, N) TFP * N^alpha;
+  Y_N = partial(Y, N);
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  Y@x@s  = Y@x(TFP@s,N@s)            {@s = 0, [tt], [tt+1] | @x = , _N};
+  q@x@s  = q@x(theta@s)              {@s = 0, [tt] | @x = F, W};
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  omega = 0.5;
+  eta   = 0.5;
+  alpha = 0.9; # for linear production (alpha = 1.0)
+  L     = 1.0;
+  m:  theta0 = 3.0;
+
+  vacc0: u0 = 0.05;
+  TFP0  = 1.0;
+  z0    = 0.3;
+  tau0  = 0.0;
+  r0    = 0.03/12; # monthly model
+  pix0: qW0 = 1/10;
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  # some shock
+  tau[] = 0.05
+
+  # transition path
+  dynsolve()
+
+  plot(0:tend, c(u0, u))
+  plot(0:tend, c(w0, w))
+
+#######################
+
+
+
+
+
+
+
+

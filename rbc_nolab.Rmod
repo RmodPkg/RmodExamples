@@ -1,0 +1,48 @@
+##############################
+# A simple RBC model
+# - log-utility function
+# - no labor
+#
+# Philip Schuster, April 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  Cons: Cons[tt+1]/Cons[tt] = betta*(1 + alpha*K[tt+1]^(alpha-1) - delta);
+  K|predet: K[tt+1] = (1-delta)*K[tt] + K[tt]^alpha - Cons[tt];
+
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  betta = 0.99;
+  alpha = 1.0/3.0;
+  delta = 0.025;
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  # some shock
+  K[1]  = K0*0.9
+
+  # transition path
+  dynsolve()
+
+  plot(0:tend, c(K0,K))
+
+#######################
+
+
+
+
+
+
+
+
