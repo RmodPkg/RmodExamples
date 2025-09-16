@@ -11,20 +11,20 @@
 model:
 
   Cons: 1/(Cons[tt] - kap*Cons[tt-1]) =
-      betta*1/(Cons[tt+1] - kap*Cons[tt])*(1 + alpha*K[tt+1]^(alpha-1) - delta);
+      betta*1/(Cons[tt+1] - kap*Cons[tt])*(1 + alpha*K[tt+1]^(alpha-1) - delta)
 
-  K|predet: K[tt+1] = (1-delta)*K[tt] + K[tt]^alpha - Cons[tt];
+  K|predet: K[tt+1] = (1-delta)*K[tt] + K[tt]^alpha - Cons[tt]
 
-  Y: Y[tt] = K[tt]^alpha;
+  Y: Y[tt] = K[tt]^alpha
 
 #-------------------------------------------------------------------------------
 
 calib:
 
-  betta = 0.99;
-  alpha = 1.0/3.0;
-  delta = 0.025;
-  kap   = 0.5;
+  betta = 0.99
+  alpha = 1.0/3.0
+  delta = 0.025
+  kap   = 0.5
 
 #-------------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ run:
   # transition path
   dynsolve(verbose = "full")
 
-  plot(0:tend,c(Cons0,Cons))
+  plot(0:tend, c(Cons0, Cons))
 
 ##############################
 
