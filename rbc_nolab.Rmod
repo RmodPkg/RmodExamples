@@ -10,16 +10,16 @@
 
 model:
 
-  Cons: Cons[tt+1]/Cons[tt] = betta*(1 + alpha*K[tt+1]^(alpha-1) - delta);
-  K|predet: K[tt+1] = (1-delta)*K[tt] + K[tt]^alpha - Cons[tt];
+  Cons: Cons[tt+1]/Cons[tt] = betta*(1 + alpha*K[tt+1]^(alpha-1) - delta)
+  K|predet: K[tt+1] = (1-delta)*K[tt] + K[tt]^alpha - Cons[tt]
 
 #-------------------------------------------------------------------------------
 
 calib:
 
-  betta = 0.99;
-  alpha = 1.0/3.0;
-  delta = 0.025;
+  betta = 0.99
+  alpha = 1.0/3.0
+  delta = 0.025
 
 #-------------------------------------------------------------------------------
 
@@ -29,12 +29,12 @@ run:
   calib()
 
   # some shock
-  K[1]  = K0*0.9
+  K[1]  = K0 * 0.9
 
   # transition path
   dynsolve()
 
-  plot(0:tend, c(K0,K))
+  plot(0:tend, c(K0, K))
 
 #######################
 

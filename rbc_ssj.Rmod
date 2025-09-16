@@ -11,31 +11,31 @@
 model:
 
   # firm
-  r: r[tt] + delta = alpha * Z[tt] * (K[tt-1] / L[tt])^(alpha - 1);
-  w: w[tt] = (1 - alpha) * Z[tt] * (K[tt-1] / L[tt])^alpha;
-  Y: Y[tt] = Z[tt] * K[tt-1]^alpha * L[tt]^(1 - alpha);
+  r: r[tt] + delta = alpha * Z[tt] * (K[tt-1] / L[tt])^(alpha - 1)
+  w: w[tt] = (1 - alpha) * Z[tt] * (K[tt-1] / L[tt])^alpha
+  Y: Y[tt] = Z[tt] * K[tt-1]^alpha * L[tt]^(1 - alpha)
 
   # household
-  L: Cons[tt] = (w[tt] / vphi / L[tt])^(1/frisch)^eis;
-  K: K[tt] = (1-delta)*K[tt-1] + Inv[tt];
+  L: Cons[tt] = (w[tt] / vphi / L[tt])^(1/frisch)^eis
+  K: K[tt] = (1-delta)*K[tt-1] + Inv[tt]
 
   # mkt_clearing
-  Inv: Y[tt] = Cons[tt] + Inv[tt];
-  Cons: Cons[tt]^(-1/eis) = betta * (1+r[tt+1])*Cons[tt+1]^(-1/eis);
-  walras: walras[tt] = Cons[tt] + K[tt] - (1+r[tt]) * K[tt-1] - w[tt]*L[tt];
+  Inv: Y[tt] = Cons[tt] + Inv[tt]
+  Cons: Cons[tt]^(-1/eis) = betta * (1+r[tt+1])*Cons[tt+1]^(-1/eis)
+  walras: walras[tt] = Cons[tt] + K[tt] - (1+r[tt]) * K[tt-1] - w[tt]*L[tt]
 
 #-------------------------------------------------------------------------------
 
 calib:
 
-  delta  = 0.025;
-  frisch = 1.0;
-  alpha  = 0.11;
-  eis    = 1.0;
+  delta  = 0.025
+  frisch = 1.0
+  alpha  = 0.11
+  eis    = 1.0
 
-  vphi:  L0 = 1.0;
-  Z0:    Y0 = 1.0;
-  betta: r0 = 0.01;
+  vphi:  L0 = 1.0
+  Z0:    Y0 = 1.0
+  betta: r0 = 0.01
 
 #-------------------------------------------------------------------------------
 
