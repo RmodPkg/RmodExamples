@@ -1,0 +1,74 @@
+##############################
+# A simple RBC model with labor and capital (given psi)
+#
+# Philip Schuster, September 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  L: -U_L[tt]/U_C[tt] = Y_L[tt]
+
+  Cons: U_C[tt]/U_C[tt+1] = betta*(Y_K[tt+1] + 1 - delta)
+
+  K|predet: K[tt+1] = Y[tt] - Cons[tt] + (1-delta)*K[tt]
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  Y   = function(TFP, K, L) TFP * K^alpha * L^(1-alpha)
+  Y_L = partial(Y, L)
+  Y_K = partial(Y, K)
+
+  U   = function(Cons, L) ( if (sigC == 1) log(Cons) else (Cons^(1-1/sigC)-1)/(1-1/sigC) ) - psi*L^(1+sigL)/(1+sigL)
+  U_C = partial(U, Cons)
+  U_L = partial(U, L)
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  U@x@s = U@x(Cons@s, L@s)              | @s = 0, [tt], [tt+1] | @x = , _C, _L
+  Y@x@s = Y@x(TFP@s, K@s, L@s)          | @s = 0, [tt], [tt+1] | @x = , _K, _L
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  betta = 0.99
+  sigC  = 0.8
+  sigL  = 1.2
+  alpha = 0.35
+  psi   = 1.4
+
+  delta: delta = 0.2*Y0/K0
+  TFP0: Y0 = 1.0
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  # some shock
+  #K[1]  = 25
+  #psi = psi*0.9
+  #delta = delta*1.02
+  TFP[] = TFP[] + 0.05
+
+  # transition path
+  dynsolve()
+
+
+#######################
+
+
+
+
+
+
+
+

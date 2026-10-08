@@ -7,11 +7,11 @@
 
 model:
 
-  L: -U_L(Cons[tt],L[tt])/U_C(Cons[tt],L[tt]) = Y_L(TFP[tt],K[tt],L[tt])    ## FOC labor
+  L: -U_L[tt]/U_C[tt] = Y_L[tt]
 
-  Cons: U_C(Cons[tt],L[tt])/U_C(Cons[tt+1],L[tt+1]) = betta*(Y_K(TFP[tt+1],K[tt+1],L[tt+1]) + 1 - delta)
+  Cons: U_C[tt]/U_C[tt+1] = betta*(Y_K[tt+1] + 1 - delta)
 
-  K|predet: K[tt+1] = Y(TFP[tt],K[tt],L[tt]) - Cons[tt] + (1-delta)*K[tt]
+  K|predet: K[tt+1] = Y[tt] - Cons[tt] + (1-delta)*K[tt]
 
 #-------------------------------------------------------------------------------
 
@@ -21,11 +21,16 @@ func:
   Y_L = partial(Y, L)
   Y_K = partial(Y, K)
 
-  U   = function(Cons, L) ( if (sigC == 1) log(Cons) else
-          (Cons^(1-1/sigC)-1)/(1-1/sigC) ) - psi*L^(1+sigL)/(1+sigL)
+  U   = function(Cons, L) ( if (sigC == 1) log(Cons) else (Cons^(1-1/sigC)-1)/(1-1/sigC) ) - psi*L^(1+sigL)/(1+sigL)
   U_C = partial(U, Cons)
   U_L = partial(U, L)
 
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  U@x@s = U@x(Cons@s, L@s)              | @s = 0, [tt], [tt+1] | @x = , _C, _L
+  Y@x@s = Y@x(TFP@s, K@s, L@s)          | @s = 0, [tt], [tt+1] | @x = , _K, _L
 
 #-------------------------------------------------------------------------------
 
@@ -33,13 +38,12 @@ calib:
 
   betta = 0.99
   sigC  = 0.8
-  sigL  = 1.2 #1.0
-  TFP0  = 1.0
+  sigL  = 1.2
+  alpha = 0.35
 
-  alpha: Y_L(TFP0,K0,L0)*L0/Y(TFP0,K0,L0) = 0.65 # labor share
-  delta: delta = 0.2*Y(TFP0,K0,L0)/K0   # 0.2374
-  psi:      L0 = 1.0*0.8 #1.0
-
+  delta: delta = 0.2*Y0/K0
+  psi:   L0 = 0.7
+  TFP0: Y0 = 1.0
 
 #-------------------------------------------------------------------------------
 
@@ -55,7 +59,7 @@ run:
   TFP[] = TFP[] + 0.05
 
   # transition path
-  dynsolve(verbose = "full")
+  dynsolve()
 
 
 #######################

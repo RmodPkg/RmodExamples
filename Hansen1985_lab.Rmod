@@ -1,5 +1,5 @@
 ##############################
-# Replcation of Hansen (JME, 1985) "Indivisible labor and the business cycle"
+# Replication of Hansen, G.D. (JME, 1985) "Indivisible labor and the business cycle", 16(3), 309-327.
 # - divisible labor case
 #
 # Philip Schuster, April 2025
@@ -9,8 +9,8 @@
 
 dims:
 
-tt = 1:500
-
+  tt = 1:500
+  
 #-------------------------------------------------------------------------------
 
 model:
@@ -62,11 +62,11 @@ run:
   calib()
 
   myvars = var_stoch(var = "TFP", rho = 0.95, sd = 0.00712, uselog = TRUE, periods = 115)
-
+  
   set.seed(12345)
 
   print(results <- stochsim(myvars, runs = 2, nworkers = 2, use_logs = T, use_hpfilter = T))
-  #print(results <- stochsim(myvars, runs = 100, nworkers = 50, use_logs = T, use_hpfilter = T)) # increase runs to 100 to replicate paper
+  # print(results <- stochsim(myvars, runs = 100, nworkers = 20, use_logs = T, use_hpfilter = T)) # increase runs to 100 to replicate paper
 
 #######################
 

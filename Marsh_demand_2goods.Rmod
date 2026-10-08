@@ -1,0 +1,52 @@
+##############################
+# Marshallian input demands
+# - 2 input CES production
+# - purely static problem (10 cases)
+#
+# Philip Schuster, September 2026
+##############################
+
+
+dims:
+
+  tt = 1:10
+
+model:
+
+  X1: Y_X1[tt] = pX1[tt]*lambda[tt]
+  X2: Y_X2[tt] = pX2[tt]*lambda[tt]
+
+  lambda: pX1[tt]*X1[tt] + pX2[tt]*X2[tt] = m[tt]
+
+func:
+
+  @CESf(Y, X1, X2, scale = TFP)
+
+calib:
+
+  pX10 = 1.0
+  pX20 = 1.0
+
+  m0   = 100.0
+
+  sigY = 1.0
+
+  TFP0: Y0 = 100.0
+
+  shareX1 = 0.5
+  shareX2 = 0.5
+
+run:
+
+  calib()
+
+  pX2[1:10] = 1:10
+
+  for (i in 1:10) ss(tt = i, verbose = "error_only")
+
+  plot(pX2, X1, type = "l")
+  plot(pX2, X2, type = "l")
+
+  plot(pX2/pX20, X2/X20, type = "l")
+  plot(pX2/pX20, X20/X2, type = "l")
+  plot(pX2/pX20, X20/X2/(pX2/pX20), type = "l")

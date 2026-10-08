@@ -1,0 +1,93 @@
+##############################
+# A simple RBC model
+# - if/else utility and production functions
+# - detrended by labor-augmenting growth g
+#
+# Philip Schuster, September 2025
+##############################
+
+#-------------------------------------------------------------------------------
+
+model:
+
+  r[tt+1] := Y_K[tt+1] - delta
+  R[tt+1] := 1 + r[tt+1]
+
+  w[tt]   := Y_L[tt]
+
+  Inv[tt] := Y[tt] - Cons[tt]
+  rho := 1-1/sigC
+
+  Cons: U_C[tt]/U_C[tt+1] = betta*R[tt+1]*G[tt]^(rho-1)
+
+  K|predet: G[tt]*K[tt+1] = Inv[tt] + (1-delta)*K[tt]
+
+  L: -U_L[tt]/U_C[tt] = w[tt]
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  Y   = function(K,L) if (sigY == 1) K^alpha * L^(1-alpha)/(alpha^alpha * (1-alpha)^(1-alpha)) else
+    (alpha^(1/sigY) * K^((sigY - 1)/sigY) + (1-alpha)^(1/sigY) * L^((sigY - 1)/sigY))^(sigY/(sigY - 1))
+  Y_L = partial(Y,L)
+  Y_K = partial(Y,K)
+
+  U   = function(Cons,L,sigL) 
+        if (!inc_eff) ((Cons - psi*L^(1+sigL)/(1+sigL))^(1-1/sigC)-1)/(1-1/sigC) else 
+        ( if (sigC == 1) log(Cons) else (Cons^(1-1/sigC)-1)/(1-1/sigC) ) - psi*L^(1+sigL)/(1+sigL)
+  U_C = partial(U,Cons)
+  U_L = partial(U,L)
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  U@x@s = U@x(Cons@s,L@s,sigL@s)         | @s = 0, [tt], [tt+1] | @x = , _C, _L
+  Y@x@s = Y@x(K@s,L@s)                   | @s = 0, [tt], [tt+1] | @x = , _K, _L
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  betta = 0.99
+  alpha = 0.3
+  sigC  = 0.9
+  sigL0 = 1.2
+  delta = 0.2*Y0/K0
+  G0    = 1.008
+  sigY  = 0.8
+
+  psi: L0 = 1.0
+
+  inc_eff = TRUE # activate/deactivate income effects
+
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  # some shock
+  #K[1]  = K0*0.95
+  G = G+0.01
+
+  # transition path
+  dynsolve(verbose = "full")
+
+  r0 = Y_K(K0, L0) - delta
+  r  = Y_K(K, L) - delta
+
+  plot(0:tend, c(r0, r), type = "l", ylim = c(0,0.03), col = "red")
+  lines(0:tend, c(G0 - 1, G - 1), col = "blue")
+
+#######################
+
+
+
+
+
+
+
+

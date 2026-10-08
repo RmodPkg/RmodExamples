@@ -1,9 +1,7 @@
 ##############################
-# A simple RBC model
-# - log-utility function
-# - no labor
+# A simple RBC model without labor
 #
-# Philip Schuster, April 2025
+# Philip Schuster, September 2025
 ##############################
 
 #-------------------------------------------------------------------------------
@@ -29,14 +27,13 @@ run:
   calib()
 
   # some shock
-  K[1]  = K0 * 0.9
+  K[1]  = K0*0.95
 
   # transition path
   dynsolve()
 
-  plot(0:tend, c(K0, K))
+  plot(0:tend, c(K0,K))
 
-#######################
 
 
 
