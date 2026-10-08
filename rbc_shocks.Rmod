@@ -1,7 +1,7 @@
 ##############################
 # A simple RBC model with labor and capital
-#
-# Philip Schuster, September 2025
+# - using shock lists
+# Philip Schuster, September 2026
 ##############################
 #-------------------------------------------------------------------------------
 
@@ -52,15 +52,18 @@ run:
   # calibration
   calib()
 
-  # some shock
-  #K[1]  = 25
-  #psi = psi*0.9
-  #delta = delta*1.02
-  TFP[] = TFP[] + 0.05
+  set.seed(123)
 
-  # transition path
-  dynsolve()
+  shocklist = list()
+  shocklist = shock_add(shocklist, var = "TFP", values = TFP0 * rep(0.02, 30))
+  shocklist = shock_add(shocklist, var = "TFP", values = TFP0 * rep(0.02, 20), starttime = 10)
+  shocklist = shock_unknown(shocklist, var = "TFP", values = TFP0 * seq(from = 0.01, to = 0.02, length.out = 10), starttime = 30)
+  shocklist = shock_imp(shocklist, var = "TFP", rho = 0.97, sd = TFP0 * 0.02)
+  shocklist = shock_stoch(shocklist, var = "TFP", rho = 0.97, sd = TFP0 * 0.02, periods = 50)
 
+  extendpath(shocklist)
+
+  plot(0:tend, c(TFP0, TFP), type = "l", xlim = c(0, 50))
 
 #######################
 

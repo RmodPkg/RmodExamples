@@ -1,0 +1,99 @@
+##############################
+# Example of elaborate government budget rule
+#
+# Philip Schuster, August 2026
+##############################
+
+# testing tt-condition
+
+# end of period timing: PB[tt] = DG[tt] - (1+r[tt]) * DG[tt-1]
+
+# tt = 0 : (ttfirst - 1)         => DG is constant at anchor value
+# tt = ttfirst : (ttsecond - 1)  => DG floats freely
+# tt = ttsecond : (ttthird - 1)  => DG is adjusts linearly back to anchor value
+# tt = ttthird : tend            => DG is constant at anchor value
+
+model:
+ 
+    CG:   CG[tt]   = if (budget == 1) bb[tt] else CGexo[tt]
+    tauC: tauC[tt] = if (budget == 2) bb[tt] else tauCexo[tt]
+    tauW: tauW[tt] = if (budget == 3) bb[tt] else tauWexo[tt]
+
+    # linear consolidation path
+    DG_target: DG_target[tt] = if (tt < ttfirst) DG_anchor else 
+                               if (tt < ttsecond) (1+r[tt]) * DG_target[tt-1] - PB_free[tt] else
+                               if (tt < ttthird) DG_target[tt-1] + (DG_anchor - DG_target[tt-1])/(ttthird - tt) else 
+                               DG_anchor
+
+    DG: DG[tt] = (1+r[tt])*DG[tt-1] - PB[tt]
+
+    PB: PB[tt] = tauC[tt]*Cons[tt] + tauW[tt]*Lsum[tt] - CG[tt]
+
+    PB_free: PB_free[tt] = if (budget == 1) tauC[tt]*Cons[tt] + tauW[tt]*Lsum[tt] - CG[tt-1] else
+                           if (budget == 2) tauC[tt-1]*Cons[tt] + tauW[tt]*Lsum[tt] - CG[tt] else 
+                                            tauC[tt]*Cons[tt] + tauW[tt-1]*Lsum[tt] - CG[tt] # budget == 3
+    
+    bb: DG[tt] = DG_target[tt]
+
+calib:
+
+    r0 = 0.03
+    DG_anchor = 70
+
+    Cons0 = 50
+    Lsum0 = 70
+
+    tauCexo0 = 0.2
+    tauWexo0 = 0.15
+    CGexo0   = CG0
+
+    ttfirst|const  = 10
+    ttsecond|const = 30
+    ttthird|const  = 100
+
+    budget = 1
+
+run:
+
+    # simulation 1: CG is budget instrument, shock tauC
+    calib(printinfo = F)
+        
+    tauCexo[ttfirst:tend] = tauC0 - 0.01
+
+    dynsolve()
+    
+    plot(0:tend, c(DG_target0, DG_target))
+    plot(0:tend, c(DG0, DG))
+    plot(0:tend, c(PB0, PB))
+    plot(0:tend, c(CG0, CG))
+
+    # simulation 2: tauC is budget instrument, shock CG
+    budget = 1 # needed for calib // or reload Rmod-object
+    calib(printinfo = F)
+
+    budget = 2
+
+    CGexo[ttfirst:tend] = CG0 - 0.5
+
+    dynsolve()
+    
+    plot(0:tend, c(DG_target0, DG_target))
+    plot(0:tend, c(DG0, DG))
+    plot(0:tend, c(PB0, PB))
+    plot(0:tend, c(tauC0, tauC))
+
+    # simulation 3: tauW is budget instrument, shock tauC
+    budget = 1 # needed for calib // or reload Rmod-object
+    calib(printinfo = F)
+
+    budget = 3
+
+    tauCexo[ttfirst:tend] = tauC0 - 0.01
+
+    dynsolve()
+    
+    plot(0:tend, c(DG_target0, DG_target))
+    plot(0:tend, c(DG0, DG))
+    plot(0:tend, c(PB0, PB))
+    plot(0:tend, c(tauW0, tauW))
+    

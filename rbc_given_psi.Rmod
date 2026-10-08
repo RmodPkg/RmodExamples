@@ -1,8 +1,9 @@
 ##############################
-# A simple RBC model with labor and capital
+# A simple RBC model with labor and capital (given psi)
 #
 # Philip Schuster, September 2025
 ##############################
+
 #-------------------------------------------------------------------------------
 
 model:
@@ -40,9 +41,9 @@ calib:
   sigC  = 0.8
   sigL  = 1.2
   alpha = 0.35
+  psi   = 1.4
 
   delta: delta = 0.2*Y0/K0
-  psi:   L0 = 0.7
   TFP0: Y0 = 1.0
 
 #-------------------------------------------------------------------------------

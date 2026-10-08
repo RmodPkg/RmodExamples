@@ -1,0 +1,167 @@
+##############################
+# Blanchard-Yaari model
+# - small open economy
+# - Armington assumption
+# - capital adjustment costs
+# - exogenous labor supply
+# - simple government that issues debt
+#
+# Philip Schuster, July 2026
+##############################
+
+#-------------------------------------------------------------------------------
+
+dims:
+
+  tt = 1:2000
+
+model:
+
+  # demography
+  N|predet:      N[tt+1] = gam[tt]*N[tt] + NB[tt]
+  L:             L[tt] = ell*N[tt]
+
+  # price block
+  pConsh: pConsh[tt] = ph[tt]
+  pConsm: pConsm[tt] = pm[tt]
+  @CESd(Cons[tt], Consm[tt], Consh[tt], sharename = xi)
+
+  pInvh: pInvh[tt] = ph[tt]
+  pInvm: pInvm[tt] = pm[tt]
+  @CESd(Inv[tt], Invm[tt], Invh[tt], sharename = xi)
+  Invnet: Invnet[tt] = Inv[tt] - J[tt]
+
+  pCGh: pCGh[tt] = ph[tt]
+  pCGm: pCGm[tt] = pm[tt]
+  @CESd(CG[tt], CGm[tt], CGh[tt], sharename = xi)
+
+  # household sector
+  Omega:         Omega[tt] = 1 + betta*gam[tt]*Omega[tt+1]
+  H:             H[tt] = w[tt]*L[tt] + gam[tt]*H[tt+1]*N[tt]/N[tt+1]/(1+r[tt])
+  Cons:          Cons[tt] = (A[tt] + H[tt])/(Omega[tt]*pCons[tt])
+
+  # firm sector
+  K|predet:      K[tt+1] = (1-deltaK)*K[tt] + Invnet[tt]
+  Inv:           qTob[tt+1] = (1+r[tt])*pInv[tt]*(1+J_I[tt])
+  qTob:          qTob[tt] = ph[tt]*Y_K[tt] - pInv[tt]*J_K[tt] + qTob[tt+1]/(1+r[tt])*(1-deltaK)
+  w:             w[tt]  = ph[tt]*Y_L[tt]
+  Div:           Div[tt] = ph[tt]*Y[tt] - (1+tauF[tt])*w[tt]*L[tt] - pInv[tt]*Inv[tt]
+  V:             V[tt] = Div[tt] + V[tt+1]/(1+r[tt])
+
+  # government
+  PB:            PB[tt] = tauF[tt]*w[tt]*L[tt] - CG[tt]
+  CG:            DG[tt+1] = DG_target[tt+1]
+  DG|predet:     DG[tt+1] = (1+r[tt])*(DG[tt] - PB[tt])
+
+  # foreign trade and market clearing
+  ph:            Y[tt] = Consh[tt] + Invh[tt] + CGh[tt] + Eh[tt]
+  Eh:            Eh[tt] = N[tt]*Eh_ss*ph[tt]^sigExport
+  TB:            TB[tt] = ph[tt]*Eh[tt] - pm[tt]*(Consm[tt] + Invm[tt] + CGm[tt])
+  A:             A[tt] = DF[tt] + DG[tt] + V[tt]
+  DF|predet:     DF[tt+1] = (1+r[tt])*(DF[tt] + TB[tt])
+
+#-------------------------------------------------------------------------------
+
+func:
+
+  # production function
+  Y   = function(K,L) TFP * K^alphaK * L^(1-alphaK)
+  Y_L = partial(Y,L)
+  Y_K = partial(Y,K)
+
+  # capital adjustment cost function
+  J   = function(K,Invnet) Psi/2*K*(Invnet/K-deltaK)^2
+  J_K = partial(J,K)
+  J_I = partial(J,Invnet)
+
+#-------------------------------------------------------------------------------
+
+preproc:
+
+  Y@x@s = Y@x(K@s,L@s)                | @s = 0, [tt], [tt+1] | @x = , _K, _L
+  J@x@s = J@x(K@s,Invnet@s)           | @s = 0, [tt], [tt+1] | @x = , _K, _I
+
+#-------------------------------------------------------------------------------
+
+calib:
+
+  r0     = 0.04
+
+  betta: DF0 = -10
+
+  avage  := 40
+  gam0   = avage/(avage+1)
+
+  Psi    = 10
+  alphaK: (1+tauF0)*L0 = 35
+  ell:   w0 = 2.0
+
+  deltaK  = 0.05
+
+  NB0:   N0 = 100.0
+  TFP:   Y0 = 100.0
+
+  DG_target0 = 60
+  tauF0      = 0.2
+
+  sigExport = -2.0
+  sigCons   = 1.2
+  sigInv    = 1.2
+  sigCG     = 1.2
+  pm0       = 1.0
+  Eh_ss:  ph0 = 1.0
+
+  Consmshare := 0.25
+  Invmshare  := 0.40
+  CGmshare   := 0.10
+
+  @CESd_calib(Cons, Consm <- Consmshare, Consh <- 1-Consmshare, sharename = xi)
+  @CESd_calib(Inv,  Invm  <- Invmshare,  Invh  <- 1-Invmshare,  sharename = xi)
+  @CESd_calib(CG,   CGm   <- CGmshare,   CGh   <- 1-CGmshare,   sharename = xi)
+
+#-------------------------------------------------------------------------------
+
+startguess:
+
+  # alphaK = 0.3
+  # ell    = L0/N0
+  # pCons0 = 1.0
+  # pInv0  = 1.0
+  # qTob0  = 1.0
+  # K0     = 300.0
+  
+#-------------------------------------------------------------------------------
+
+run:
+
+  # calibration
+  calib()
+
+  cat("check: ", (1+r0)/r0*(Cons0 - w0*L0) - A0, "\n\n")
+
+  # some shock
+  # K[1]  = K0*0.95
+  # NB[]   = NB0*1.02
+  tauF[] = tauF[] - 0.02
+  
+  # DG_target[1:20] = seq(60, 70, length.out = 20)
+  # DG_target[21:tend] = 70
+
+  # transition path
+  dynsolve()
+
+  # plot(0:tend, c(N0, N))
+  # plot(0:tend, c(ph0, ph))
+  # plot(0:tend, c(DF0, DF))
+  # plot(0:tend, c(TB0, TB))
+  # plot(0:tend, c(Y(K0, L0), Y(K, L)))
+
+#######################
+
+
+
+
+
+
+
+
