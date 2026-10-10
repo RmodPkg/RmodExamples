@@ -1,0 +1,67 @@
+################################################################################
+# Portfolio problem v2
+# - with quadratic holding costs
+# - with quadratic adjustment costs
+# - with constant bounds
+#
+# Philip Schuster, October 2026
+
+# 3 assets: maximize profits Pi w.r.t. x1, x2, x3
+
+# Pi[tt] = p1[tt]*x1[tt] - phi1/2*x1[tt]^2 - chi1/2*(x1[tt]-x1[tt-1])^2
+#        + p2[tt]*x2[tt] - phi2/2*x2[tt]^2 - chi2/2*(x2[tt]-x2[tt-1])^2
+#        + p3[tt]*x3[tt] - phi3/2*x3[tt]^2 - chi3/2*(x3[tt]-x3[tt-1])^2
+#        + betta*Pi[tt+1]
+#
+# s.t. x1[tt] + x2[tt] + x3[tt] = 0
+#      x2[tt] >= 0
+#
+# Lagrangian = Pi[tt] - lambda[tt]*(x1[tt] + x2[tt] + x3[tt])
+#
+################################################################################
+
+model:
+
+    x1: p1[tt] - phi1*x1[tt] - chi1*(x1[tt] - x1[tt-1]) + betta * chi1*(x1[tt+1] - x1[tt]) - lambda[tt] = 0
+    x2 | bounds[0, Inf]: p2[tt] - phi2*x2[tt] - chi2*(x2[tt] - x2[tt-1]) + betta * chi2*(x2[tt+1] - x2[tt]) - lambda[tt] = 0
+    x3: p3[tt] - phi3*x3[tt] - chi3*(x3[tt] - x3[tt-1]) + betta * chi3*(x3[tt+1] - x3[tt]) - lambda[tt] = 0
+
+    lambda: x1[tt] + x2[tt] + x3[tt] = 0
+
+calib:
+
+    betta = 0.99
+
+    p10   = 3.0
+    phi1  = 0.1
+    chi1  = 2.0
+
+    p20   = 4.0
+    phi2  = 0.15
+    chi2  = 2.0
+
+    p30   = 5.0
+    phi3  = 0.2
+    chi3  = 2.0
+
+run:
+
+    myplot = function() {
+        plot(0:tend, c(x10, x1), type = "l", col = "#2CA198",
+        xlab = "periods", ylab = "net position",
+        xlim = c(0, 20), ylim = c(-10, 10))
+        abline(h = 0)
+        lines(0:tend, c(x20, x2), col = "#657B83")
+        lines(0:tend, c(x30, x3), col = "#909900")
+        legend("bottomright", legend = c("x1", "x2", "x3"),
+        col = c("#2CA198", "#657B83", "#909900"), lty = 1)
+    }
+
+    calib()
+
+    p1[] = 4.5
+
+    dynsolve()
+
+    myplot()
+    
