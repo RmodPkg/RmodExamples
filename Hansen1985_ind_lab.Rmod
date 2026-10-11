@@ -63,7 +63,7 @@ run:
 
   calib()
 
-  myvars = var_stoch(var = "TFP", rho = 0.95, sd = 0.00712, uselog = TRUE, periods = 115)
+  myvars = var_stoch(var = "TFP", rho = 0.95, sd = 0.00712, log_shock = TRUE, periods = 115)
 
   set.seed(12345)
 
