@@ -1,14 +1,14 @@
 ##############################
 # Simple multi-dimensional capital accumulation
 #
-# Philip Schuster, April 2025
+# Philip Schuster, October 2026
 ##############################
 
 #-------------------------------------------------------------------------------
 
-dims:
+dim:
 
-  tt = 1:300
+  tt = 1:600
   j  = 1:2
   k  = 1:2
 
@@ -17,15 +17,20 @@ dims:
 model:
 
   K|predet: K[j,k,tt+1] = Inv[j,tt] + (1-delta[j])*K[j,k,tt]           | j = 1:2 | k = 1:2
-  X: X[tt] = 100.0
+    
+  X: X[tt] = 100.0                                    # trivial equation
+  Y: Y[tt] = rho * Y[tt-1] + (1-rho) * K[1,1,tend]    # use final steady value in model equations
+  Z: Z[j,k,tt] = 4 * K[j,k,tend] | j = 1:2 | k = 1:2  # use multidim final steady values in model equations
+  Q: Q[j,tt] = 3 * K0[j,1] | j = 1:2                  # use multidim calibration values in model equations
 
 #-------------------------------------------------------------------------------
 
 calib:
 
-  delta[1] = 0.02
-  delta[2] = 0.025
+  delta[1] = 0.03
+  delta[2] = 0.035
   Inv0[j]  = 0.4  | j = 1:2
+  rho      = 0.9
   alpha    = 0.4 # unnecessary parameter
 
 #-------------------------------------------------------------------------------

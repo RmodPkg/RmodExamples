@@ -56,7 +56,7 @@ calib:
 run:
 
     # simulation 1: CG is budget instrument, shock tauC
-    calib(printinfo = F)
+    calib(print_info = F)
         
     tauCexo[ttfirst:tend] = tauC0 - 0.01
 
@@ -69,7 +69,7 @@ run:
 
     # simulation 2: tauC is budget instrument, shock CG
     budget = 1 # needed for calib // or reload Rmod-object
-    calib(printinfo = F)
+    calib(print_info = F)
 
     budget = 2
 
@@ -84,7 +84,7 @@ run:
 
     # simulation 3: tauW is budget instrument, shock tauC
     budget = 1 # needed for calib // or reload Rmod-object
-    calib(printinfo = F)
+    calib(print_info = F)
 
     budget = 3
 
