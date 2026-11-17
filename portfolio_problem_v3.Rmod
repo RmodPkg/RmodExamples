@@ -22,10 +22,6 @@
 #
 ################################################################################
 
-option:
-
-    calib_blocks = FALSE
-
 model:
 
     x1: p1[tt] - phi1*x1[tt] - chi1*(x1[tt] - x1[tt-1]) + betta * chi1*(x1[tt+1] - x1[tt]) - lambda[tt] = 0

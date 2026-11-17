@@ -24,16 +24,16 @@ model:
   # price block
   pConsh: pConsh[tt] = ph[tt]
   pConsm: pConsm[tt] = pm[tt]
-  @CESd(Cons[tt], Consm[tt], Consh[tt], sharename = xi)
+  @CESd(Cons, Consm, Consh, sharename = xi)
 
   pInvh: pInvh[tt] = ph[tt]
   pInvm: pInvm[tt] = pm[tt]
-  @CESd(Inv[tt], Invm[tt], Invh[tt], sharename = xi)
+  @CESd(Inv, Invm, Invh, sharename = xi)
   Invnet: Invnet[tt] = Inv[tt] - J[tt]
 
   pCGh: pCGh[tt] = ph[tt]
   pCGm: pCGm[tt] = pm[tt]
-  @CESd(CG[tt], CGm[tt], CGh[tt], sharename = xi)
+  @CESd(CG, CGm, CGh, sharename = xi)
 
   # household sector
   Omega:         Omega[tt] = 1 + betta*gam[tt]*Omega[tt+1]

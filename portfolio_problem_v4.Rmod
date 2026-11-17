@@ -1,5 +1,5 @@
 ################################################################################
-# Portfolio problem v3
+# Portfolio problem v4
 # - with quadratic holding costs
 # - with quadratic adjustment costs
 # - with endogenous bounds
@@ -21,10 +21,6 @@
 #     mu[tt] >= 0
 #
 ################################################################################
-
-option:
-
-    calib_blocks = FALSE
 
 model:
 
